@@ -13,7 +13,7 @@ concurrency:
 env:
   JULIA_DEPOT_PATH: '~/.julia'
   JULIA_NUM_THREADS: 'auto'
-  JULIA_CACHE_NUM: '1'
+  JULIA_CACHE: '1'
   TIMEOUT: 600
   JOBS: '1'
   PYTHON_VER: '3.11'
@@ -21,8 +21,6 @@ env:
 jobs:
   jupyter-book:
     runs-on: ubuntu-latest
-    outputs:
-      skip_deploy: ${{ steps.skipdeploy.outputs.skip_deploy }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -52,17 +50,18 @@ jobs:
           version: ${{ env.jlver }}
       - name: Cache Julia dependencies
         uses: actions/cache@v3
+        if: ${{ env.JULIA_CACHE != '0'}}
         with:
           path: ${{ env.JULIA_DEPOT_PATH }}
-          key: ${{ runner.os }}-julia-${{ env.JULIA_CACHE_NUM }}-${{ hashFiles('**/Manifest.toml') }}
+          key: ${{ runner.os }}-julia-${{ env.JULIA_CACHE }}-${{ hashFiles('**/Manifest.toml') }}
           restore-keys: |
-            ${{ runner.os }}-julia-${{ env.JULIA_CACHE_NUM }}-
+            ${{ runner.os }}-julia-${{ env.JULIA_CACHE }}-
       - name: Install Julia dependencies
         env:
           PYTHON: ${{ steps.python.outputs.python-path }}
         run: |
-          julia --color=yes --project="" -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia", "--project=@.")'
           julia --color=yes --project=@. -e 'import Pkg; Pkg.instantiate(); Pkg.resolve(); Pkg.precompile()'
+          julia --color=yes --project="" -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia", "--project=@.")'
       - name: Build notebooks
         run: >
           parallel --joblog /tmp/log -j${{ env.JOBS }}
@@ -75,12 +74,6 @@ jobs:
         run: cat /tmp/log
       - name: Build website
         run: jupyter-book build docs/
-      - name: Skip deploy if matrix workflow file exists
-        id: skipdeploy
-        run: |
-          if test -f '.github/workflows/ci-matrix.yml'; then
-              echo 'skip_deploy=true' >> $GITHUB_OUTPUT
-          fi
       - name: Upload pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-pages-artifact@v1
@@ -90,7 +83,7 @@ jobs:
   # Deployment job
   deploy:
     needs: jupyter-book
-    if: ${{ github.ref == 'refs/heads/main' && needs.jupyter-book.outputs.skip_deploy != 'true' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
       pages: write # to deploy to Pages
