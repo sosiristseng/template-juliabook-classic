@@ -1,4 +1,4 @@
-FROM ghcr.io/sosiristseng/docker-jupyterbook:0.15.1 as base
+FROM ghcr.io/sosiristseng/docker-jupyterbook:0.15.1.1 as base
 
 # Julia
 ENV JULIA_CI true
