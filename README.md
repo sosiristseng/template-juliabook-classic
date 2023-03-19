@@ -28,7 +28,7 @@ You need to enable GitHub pages by selecting repository settings -> pages -> Bui
 
 ## Automatic dependency updates
 
-### Renovate bot and Kodiak Bot
+### Dependabot and Kodiak Bot
 
 - [dependabot.yml](.github/dependabot.yml)
 - [.kodiak.toml](.github/.kodiak.toml)
