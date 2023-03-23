@@ -34,7 +34,7 @@ jobs:
           python-version: ${{ env.PYTHON_VER }}
       - name: Install Python dependencies
         run: |
-          pip install -U jupyter-book nbconvert
+          pip install -U nbconvert
           pip install -r requirements.txt
       - name: Read Julia version
         uses: SebRollen/toml-action@v1.0.2
@@ -42,12 +42,10 @@ jobs:
         with:
           file: 'Manifest.toml'
           field: 'julia_version'
-      - name: Save Julia version
-        run: echo "jlver=${{ steps.read_toml.outputs.value }}" >> $GITHUB_ENV
-      - name: Setup Julia ${{ env.jlver }}
+      - name: Setup Julia
         uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ env.jlver }}
+          version: ${{ steps.read_toml.outputs.value }}
       - name: Cache Julia dependencies
         uses: actions/cache@v3
         if: ${{ env.JULIA_CACHE != '0'}}
@@ -65,7 +63,7 @@ jobs:
       - name: Build notebooks
         run: >
           parallel --joblog /tmp/log -j${{ env.JOBS }}
-          jupyter nbconvert --to notebook
+          jupyter-nbconvert --to notebook
           --ExecutePreprocessor.timeout=${{ env.TIMEOUT }}
           --ExecutePreprocessor.kernel_name=julia-$(julia -e 'print(VERSION.major,".",VERSION.minor)')
           --execute --inplace
@@ -73,7 +71,7 @@ jobs:
       - name: Display execution stats
         run: cat /tmp/log
       - name: Build website
-        run: jupyter-book build docs/
+        run: pipx run jupyter-book build docs/
       - name: Upload pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-pages-artifact@v1
